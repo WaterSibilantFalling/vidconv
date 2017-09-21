@@ -41,7 +41,7 @@ vidconv:
 Currently, vidconv produces 20 FPS (frame per second) videos accompanied by 100kb/s MP3 sound tracks. 
 
 
-##### Dealing with the sound track
+### Dealing with the sound track
 
 **Handling audio - video desynchronization**
 
