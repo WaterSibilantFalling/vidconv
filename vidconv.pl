@@ -225,7 +225,7 @@ foreach my $thisInFile (@infiles){
 	sleep 10 ; 
 
 }
-
+  
 #	Want B-frames ? 
 #    -g 300 -bf 2
 # 
