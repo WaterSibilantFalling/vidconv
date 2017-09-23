@@ -11,15 +11,17 @@
 # 		order to have no audio - video offset
 # TODO:	Supress the selection of an English soundtrack in a multi-soundtrack file
 
-
-
 use common::sense;
 use IO::All;
 use autodie;
 use English; 
 use charnames           qw< :full >;
+$0 = basename($0);  	# shorter messages
+$| = 1;					# autoflush: solving perl's stupidities 1 by 1
 
 my @OkFormats = ("avi", "mp4", "mkv", "mov", "divx", "wmv", "mpeg", "ogm");  
+
+
 
 # --- commandline parametes ---
 
@@ -38,6 +40,8 @@ my $okOptions = GetOptions(
 			"informat=s"	=> \$informat,
 			"outformat=s"	=> \$outformat,
 			);
+
+
 
 # --- Useage message
 
@@ -62,6 +66,8 @@ The formats can be any of: "@OkFormats"
 Either '-i infile.zzz', or '--informat yyy' must be specified. 
 
 USAGE
+
+
 
 # --- test the commandline input
 
@@ -90,7 +96,9 @@ if (! (grep(/$outformat/i,@OkFormats))){
 	print $usageMsg;
 	exit(1);
 }
+
 # - test that required external programs are present
+
 my $mediainfoPresent = `which mediainfo`; 
 chomp $mediainfoPresent; 
 if (! -x $mediainfoPresent ){
@@ -105,15 +113,23 @@ if (! -x $ffprobePresent ){
 	print $usageMsg; 
 	exit (1); 
 }
+my $ffmpegPresent = `which ffmpeg`; 
+chomp $ffmpegPresent; 
+if (! -x $ffmpegPresent ){
+	print "an executable copy of ffmpeg is required\n";
+	print $usageMsg; 
+	exit (1); 
+}
 # - Bugs: 
 # should test that $delayAudio is a number
 # should test that the infile exists
 
 
 
+
 my ($outfile, $audiotrackSelector, $videotrackSelector ); 
 
-# file list to transcode
+# get the file list to transcode
 my @infiles; 
 if ($singleInfile) {
 	@infiles[0] = $singleInfile; 
@@ -122,9 +138,12 @@ if ($singleInfile) {
 	@infiles = map{ $_->name } @infiles; 
 }
 
+
+
+# --- do the transcoding 
 foreach my $thisInFile (@infiles){
 
-# identify any sound - video offset
+# (1) identify any sound - video offset
 	my $delayOfAudio = 0; 
 	if ($cmdLineDelayOfAudio) {
 		$delayOfAudio = $cmdLineDelayOfAudio;
@@ -155,7 +174,7 @@ foreach my $thisInFile (@infiles){
 	# because need two input files to delay the audio
 	my $audioInputFile = $delayOfAudio?1:0; 
 	
-# identify the english audiotrack
+# (2) identify the english audiotrack
 	my @ffprobeData = `/usr/bin/ffprobe $thisInFile 2>&1 `; 
 	chomp @ffprobeData; 
 	my ($audioline) = grep (/Stream.+\(eng\).+Audio/,@ffprobeData);
@@ -170,10 +189,13 @@ foreach my $thisInFile (@infiles){
 						? "$audioInputFile:a" : "$audioInputFile:$audiotrack:a";  
 
 
-# outfile name
+# (3) make the outfile's name
 	my $outfile = ($thisInFile =~ s/\.*$/\.avi/r); 
 	`rm -f $outfile`; 
 
+
+# (4) do transcoding
+	
 	# subcommand for delaying the audio
 	# adds the audio as a second copy of the infile
 	# itsoffset has to be before the file it refers to
@@ -182,7 +204,6 @@ foreach my $thisInFile (@infiles){
 						? 	" -itsoffset $delayOfAudio -i \"$thisInFile\"  "
 						:	"  "; 
 	
-# do transcoding
 	my $cmd =" "
 	. " /usr/bin/nice -n 20 /usr/bin/ffmpeg -i \"$thisInFile\" "
 	. $delayAudioCmd  
@@ -205,7 +226,8 @@ foreach my $thisInFile (@infiles){
 
 }
 
-#    -g 300 -bf 2 -map 0:m:language:eng? \
+#	Want B-frames ? 
+#    -g 300 -bf 2
 # 
 
 
